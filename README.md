@@ -680,12 +680,11 @@ PRs are welcome!
 
 ### Prerequisites:
 
-- [pipx](https://pipx.pypa.io/stable/installation/) (to install poetry, if needed)
-- `pipx install poetry`
-- `pip install pre-commit`
-- [nvm](https://github.com/nvm-sh/nvm)
-- `npm` (for firebase CLI installation)
-- [java](http://www.java.com) via `brew install openjdk@21`
+- [Node 22](https://nodejs.org/en/download)
+- [Pre-commit](https://pre-commit.com/#install)
+- [Python 3.10+](https://wiki.python.org/moin/BeginnersGuide/Download)
+- [Poetry](https://python-poetry.org/docs/#installation)
+- [Google Firebase Emulator Suite](https://firebase.google.com/docs/emulator-suite/install_and_configure#install_the_local_emulator_suite)
 
 ### Running Firestore emulator
 
@@ -707,7 +706,7 @@ Run the Firestore emulator with a predictable port:
 start_emulator
 ```
 
-### Tests
+### Running Tests
 
 To run tests locally, you should first:
 
