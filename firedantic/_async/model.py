@@ -59,7 +59,7 @@ def get_collection_name(cls, collection_name: Optional[str] = None) -> str:
         cfg = configuration.get_config(config_name)
         prefix = cfg.prefix or ""
         return f"{prefix}{collection_name}"
-    
+
     if getattr(cls, "__collection__", None):
         cfg = configuration.get_config(config_name)
         return f"{cfg.prefix or ''}{cls.__collection__}"
@@ -67,8 +67,9 @@ def get_collection_name(cls, collection_name: Optional[str] = None) -> str:
     raise CollectionNotDefined(f"Missing collection name for {cls.__name__}")
 
 
-
-def _get_col_ref(cls, collection_name: Optional[str] = None) -> AsyncCollectionReference:
+def _get_col_ref(
+    cls, collection_name: Optional[str] = None
+) -> AsyncCollectionReference:
     """
     Return an AsyncCollectionReference for the model class using the configured async client.
 
@@ -88,9 +89,10 @@ def _get_col_ref(cls, collection_name: Optional[str] = None) -> AsyncCollectionR
 
     # Ensure we got the right object back
     if not hasattr(col_ref, "document"):
-        raise RuntimeError(f"_get_col_ref returned unexpected object for {cls}: {type(col_ref)!r}")
+        raise RuntimeError(
+            f"_get_col_ref returned unexpected object for {cls}: {type(col_ref)!r}"
+        )
     return col_ref
-
 
 
 class AsyncBareModel(pydantic.BaseModel, ABC):
@@ -105,7 +107,6 @@ class AsyncBareModel(pydantic.BaseModel, ABC):
     __ttl_field__: Optional[str] = None
     __composite_indexes__: Optional[Iterable[IndexDefinition]] = None
     __db_config__: str = "(default)"  # override in subclasses when needed
-
 
     async def save(
         self,
@@ -126,7 +127,7 @@ class AsyncBareModel(pydantic.BaseModel, ABC):
 
         # Resolve config to use (explicit -> instance -> class -> default)
         if config_name is not None:
-            resolved = config_name 
+            resolved = config_name
         else:
             resolved = getattr(self, "__db_config__", None)
         if not resolved:
@@ -134,9 +135,7 @@ class AsyncBareModel(pydantic.BaseModel, ABC):
 
         # Build payload
         data = self.model_dump(
-            by_alias=True, 
-            exclude_unset=exclude_unset, 
-            exclude_none=exclude_none
+            by_alias=True, exclude_unset=exclude_unset, exclude_none=exclude_none
         )
         if self.__document_id__ in data:
             del data[self.__document_id__]
@@ -144,7 +143,7 @@ class AsyncBareModel(pydantic.BaseModel, ABC):
         async_client = configuration.get_async_client(resolved)
         if async_client is None:
             raise RuntimeError(f"No async client configured for config '{resolved}'")
-        
+
         # Get collection reference from async_client with the collection_name
         collection_name = self.get_collection_name()
         col_ref = async_client.collection(collection_name)
@@ -152,7 +151,7 @@ class AsyncBareModel(pydantic.BaseModel, ABC):
         # Build doc ref (use provided id if set, otherwise let server generate)
         doc_id = self.get_document_id()
         if doc_id:
-            doc_ref = col_ref.document(doc_id) 
+            doc_ref = col_ref.document(doc_id)
         else:
             doc_ref = col_ref.document()
 
@@ -212,7 +211,7 @@ class AsyncBareModel(pydantic.BaseModel, ABC):
     @classmethod
     async def delete_all_for_model(cls, config_name: Optional[str] = None) -> None:
 
-         # Resolve config to use (explicit -> instance -> class -> default)
+        # Resolve config to use (explicit -> instance -> class -> default)
         config_name = cls.__db_config__
 
         client = configuration.get_async_client(config_name)
@@ -221,7 +220,6 @@ class AsyncBareModel(pydantic.BaseModel, ABC):
 
         async for doc in col_ref.stream():
             await doc.reference.delete()
-
 
     @classmethod
     async def find(  # pylint: disable=too-many-arguments
@@ -379,7 +377,9 @@ class AsyncBareModel(pydantic.BaseModel, ABC):
         )
 
     @classmethod
-    def _get_col_ref(cls, collection_name: Optional[str] = None) -> AsyncCollectionReference:
+    def _get_col_ref(
+        cls, collection_name: Optional[str] = None
+    ) -> AsyncCollectionReference:
         """
         Returns the collection reference.
         """
@@ -392,7 +392,9 @@ class AsyncBareModel(pydantic.BaseModel, ABC):
         """
         return get_collection_name(cls, cls.__collection__)
 
-    def _get_doc_ref(self, config_name: Optional[str] = "(default)") -> AsyncDocumentReference:
+    def _get_doc_ref(
+        self, config_name: Optional[str] = "(default)"
+    ) -> AsyncDocumentReference:
         """
         Returns the document reference.
 

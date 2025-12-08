@@ -4,7 +4,7 @@ from unittest.mock import Mock
 import google.auth.credentials
 from google.cloud.firestore import AsyncClient, Client
 
-from firedantic.configurations import configuration, configure, CONFIGURATIONS
+from firedantic.configurations import CONFIGURATIONS, configuration, configure
 
 
 ## OLD WAY:
@@ -26,13 +26,12 @@ def configure_sync_client():
 
     # project check
     assert CONFIGURATIONS["db"].project == "firedantic-test"
-    
+
     # emulator expectations
     assert isinstance(CONFIGURATIONS["db"]._credentials, Mock)
 
     # ensure no accidental async setting
     assert not isinstance(CONFIGURATIONS["db"], AsyncClient)
-
 
 
 def configure_async_client():
@@ -53,13 +52,12 @@ def configure_async_client():
 
     # project check
     assert CONFIGURATIONS["db"].project == "firedantic-test"
-    
+
     # emulator expectations
     assert isinstance(CONFIGURATIONS["db"]._credentials, Mock)
 
     # ensure no accidental async setting
     assert not isinstance(CONFIGURATIONS["db"], Client)
-
 
 
 ## NEW WAY:
@@ -80,7 +78,6 @@ def configure_multiple_clients():
         project="test-billing",
         credentials=Mock(spec=google.auth.credentials.Credentials),
     )
-
 
     # ===========================
     #   VALIDATE DEFAULT CONFIG
@@ -105,7 +102,6 @@ def configure_multiple_clients():
     # Config can return correct client API
     assert isinstance(config.get_client(), Client)
     assert isinstance(config.get_async_client(), AsyncClient)
-
 
     # ===========================
     #   VALIDATE BILLING CONFIG
@@ -135,7 +131,6 @@ def configure_multiple_clients():
     assert billing.project != default.project
 
 
-
 try:
     ### ---- Running OLD way ----
     configure_sync_client()
@@ -143,7 +138,7 @@ try:
 
     ### ---- Running NEW way ----
     configure_multiple_clients()
-    
+
     print("\nAll configure_firestore_db_client tests passed!\n")
 
 except AssertionError as e:

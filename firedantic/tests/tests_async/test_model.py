@@ -44,6 +44,7 @@ async def test_save_model(create_company) -> None:
     assert company.owner.first_name == "John"
     assert company.owner.last_name == "Doe"
 
+
 @pytest.mark.asyncio
 async def test_delete_all_for_model(create_company) -> None:
     company: Company = await create_company(

@@ -21,6 +21,7 @@ from firedantic.exceptions import ModelNotFoundError
 
 from unittest.mock import AsyncMock, Mock  # noqa isort: skip
 
+
 class CustomIDModel(AsyncBareModel):
     __collection__ = "custom"
     __document_id__ = "foo"

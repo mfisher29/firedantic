@@ -18,16 +18,21 @@ pip install firedantic
 
 ## Quick overview
 
-Firedantic provides simple Pydantic-based models for Firestore, with both sync and async model classes, helpers for composite indexes and TTL policies, and a new configuration system that supports multiple named Firestore connections.
+Firedantic provides simple Pydantic-based models for Firestore, with both sync and async
+model classes, helpers for composite indexes and TTL policies, and a new configuration
+system that supports multiple named Firestore connections.
 
 ## Usage
 
 ### Migration Guide: Legacy `configure()` → New `Configuration`
 
-We introduced a new, more flexible `Configuration` registry to support multiple Firestore clients, lazy client creation, and admin clients. The legacy `configure()` helper is still supported for backwards compatibility, but it is now considered **deprecated**. Scroll below for legacy instructions.
-
+We introduced a new, more flexible `Configuration` registry to support multiple
+Firestore clients, lazy client creation, and admin clients. The legacy `configure()`
+helper is still supported for backwards compatibility, but it is now considered
+**deprecated**. Scroll below for legacy instructions.
 
 ### New (Recommended) Usage
+
 ```python
 from firedantic.configurations import configuration
 
@@ -45,9 +50,12 @@ billing_client = configuration.get_client("billing") # sync client for "billing"
 
 Notes:
 
-- `configuration.add(...)` accepts either client/async_client (pre-built) or project+credentials and will lazily create clients.
-- Models can declare `__db_config__ = "custom-name"` to use a named configuration or omit it to use the `"(default)"` config.
-- Backwards-compatible helpers (`configure()`, `CONFIGURATIONS`) will still populate the old surface but are deprecated.
+- `configuration.add(...)` accepts either client/async_client (pre-built) or
+  project+credentials and will lazily create clients.
+- Models can declare `__db_config__ = "custom-name"` to use a named configuration or
+  omit it to use the `"(default)"` config.
+- Backwards-compatible helpers (`configure()`, `CONFIGURATIONS`) will still populate the
+  old surface but are deprecated.
 
 ### Old (Legacy – Still Works, Deprecated) Usage
 
@@ -75,6 +83,7 @@ configure(client, prefix="firedantic-test-")
 ```
 
 You may also still use:
+
 ```python
 from firedantic.configurations import CONFIGURATIONS
 
@@ -84,9 +93,11 @@ prefix = CONFIGURATIONS["prefix"]
 
 ### Defining Models
 
-Once that is done, you can start defining your Pydantic models. Models are Pydantic classes that extend Firedantic’s sync Model or async AsyncModel:
+Once that is done, you can start defining your Pydantic models. Models are Pydantic
+classes that extend Firedantic’s sync Model or async AsyncModel:
 
 #### Sync Model Example
+
 ```python
 from pydantic import BaseModel
 from firedantic import Model
@@ -207,7 +218,8 @@ async def get_user_purchases(user_id: str, period: str = "2021") -> int:
 
 ## Composite Indexes and TTL Policies
 
-Firedantic supports defining and automatically creating Composite Indexes and TTL Policies for your Firestore models. These can be created using either:
+Firedantic supports defining and automatically creating Composite Indexes and TTL
+Policies for your Firestore models. These can be created using either:
 
 - The new `Configuration` class (recommended)
 - The legacy `configure()` method (deprecated but still supported)
@@ -221,9 +233,11 @@ It must be a list of composite index definitions created using:
 - `collection_index(...)` – for single-collection queries
 - `collection_group_index(...)` – for collection group queries
 
-Each index definition takes an arbitrary number of (field_name, order) tuples. Order must be `Query.ASCENDING` or `Query.DESCENDING`.
+Each index definition takes an arbitrary number of (field_name, order) tuples. Order
+must be `Query.ASCENDING` or `Query.DESCENDING`.
 
 #### Example:
+
 ```python
 __composite_indexes__ = [
     collection_index(("content", Query.ASCENDING), ("expire", Query.DESCENDING)),
@@ -236,11 +250,13 @@ __composite_indexes__ = [
 TTL (Time-To-Live) policies are defined using the `__ttl_field__` attribute.
 
 Rules:
+
 - The field must be a datetime object
 - The field name must be assigned to `__ttl_field__`
 - TTL policies cannot be created in the Firestore Emulator
 
 #### Example:
+
 ```python
 __ttl_field__ = "expire"
 ```
@@ -248,14 +264,16 @@ __ttl_field__ = "expire"
 #### Recommended Usage (New Configuration API)
 
 All index and TTL setup functions now automatically resolve:
+
 - The correct project
 - The correct database
-- The correct admin client
-…based on each model’s `__db_config__`
+- The correct admin client …based on each model’s `__db_config__`
 
-This means you no longer need to pass projects, databases, or admin clients manually--  And further, you can maintain multiple of each within your app.
+This means you no longer need to pass projects, databases, or admin clients manually--
+And further, you can maintain multiple of each within your app.
 
 #### Sync Example (Recommended)
+
 ```python
 from datetime import datetime
 from google.cloud.firestore import Query
@@ -339,7 +357,8 @@ if __name__ == "__main__":
 
 #### Legacy Usage (Still Supported, Deprecated)
 
-The old method using `configure()` and manually passing Firestore Admin clients is still supported but deprecated.
+The old method using `configure()` and manually passing Firestore Admin clients is still
+supported but deprecated.
 
 ##### Composite indexes
 
@@ -374,8 +393,8 @@ The examples use `async_set_up_composite_indexes_and_ttl_policies` and
 and TTL policies. However, you can use separate functions to set up only either one of
 them.
 
-
 ###### Legacy Sync Example
+
 ```python
 from datetime import datetime
 from google.cloud.firestore import Client, Query
@@ -417,6 +436,7 @@ if __name__ == "__main__":
 ```
 
 ###### Legacy Async Example
+
 ```python
 import asyncio
 from datetime import datetime
@@ -461,7 +481,8 @@ if __name__ == "__main__":
 
 Firedantic has basic support for
 [Firestore Transactions](https://firebase.google.com/docs/firestore/manage-data/transactions).
-The following methods can be used in a transaction for both **sync** and **async** models:
+The following methods can be used in a transaction for both **sync** and **async**
+models:
 
 - `Model.delete(transaction=transaction)`
 - `Model.find_one(transaction=transaction)`
@@ -477,15 +498,15 @@ When using transactions, note that read operations must come before write operat
 ### Recommended Usage (New Configuration Class)
 
 With the new `Configuration` system, transactions automatically use the configured:
+
 - Project
 - Database
-- Client
-based on the active configuration.
-
+- Client based on the active configuration.
 
 ### Transaction examples
 
 #### Sync Transaction Example (Recommended)
+
 ```python
 from firedantic import Model, get_transaction
 from firedantic.configurations import configuration
@@ -540,7 +561,8 @@ if __name__ == "__main__":
 
 ### Legacy Usage (Still Supported, Deprecated)
 
-The original configure() method and manual client wiring still works, but is now deprecated in favor of `Configuration`.
+The original configure() method and manual client wiring still works, but is now
+deprecated in favor of `Configuration`.
 
 #### Legacy Async Transaction Example
 
@@ -726,6 +748,8 @@ version is generated automatically by invoke task:
 ```bash
 poetry run invoke unasync
 ```
+
+If new functions, comments, variables etc. are added that will span across sync and async directories, be sure to first declare the replacements in `unasync.py` before running poetry. I.e. a replacement of 'async_client' with 'client' for the sync directory.
 
 We decided to go this way in order to:
 

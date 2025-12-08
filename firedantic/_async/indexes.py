@@ -111,7 +111,9 @@ async def set_up_composite_indexes(
         project = gcloud_project or configuration.get_config(config_name).project
 
         # Build collection group path using configuration helper (includes prefix)
-        collection_group = configuration.get_collection_name(model, config_name=config_name)
+        collection_group = configuration.get_collection_name(
+            model, config_name=config_name
+        )
         path = f"projects/{project}/databases/{database}/collectionGroups/{collection_group}"
 
         indexes_in_db = await get_existing_indexes(client, path=path)
@@ -120,10 +122,18 @@ async def set_up_composite_indexes(
         new_indexes = model_indexes.difference(indexes_in_db)
 
         for index in existing_indexes:
-            logger.debug("Composite index already exists in DB: %s, collection: %s", index, collection_group)
+            logger.debug(
+                "Composite index already exists in DB: %s, collection: %s",
+                index,
+                collection_group,
+            )
 
         for index in new_indexes:
-            logger.info("Creating new composite index: %s, collection: %s", index, collection_group)
+            logger.info(
+                "Creating new composite index: %s, collection: %s",
+                index,
+                collection_group,
+            )
             operation = await create_composite_index(client, index, path)
             operations.append(operation)
 

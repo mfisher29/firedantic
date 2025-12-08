@@ -29,40 +29,53 @@ import google.auth.credentials
 # require firedantic package (adjust path or install locally)
 try:
     # recommended imports
-    from firedantic.common import IndexField
-    from firedantic.configurations import configuration, CONFIGURATIONS, configure
-    from firedantic import (
-        Model,
-        AsyncModel,
-        collection_index,
-        collection_group_index,
-        ## IndexField,
-        set_up_composite_indexes_and_ttl_policies,
-        async_set_up_composite_indexes_and_ttl_policies,
-        get_all_subclasses,
-        get_transaction,
-        get_async_transaction,
-    )
     from google.cloud.firestore import Client, Query
+    from google.cloud.firestore_admin_v1.services.firestore_admin import (
+        FirestoreAdminAsyncClient,
+        FirestoreAdminClient,
+    )
+
     # from google.cloud.firestore import AsyncClient as AsyncClientSyncName  # alias to avoid name clash
-    from google.cloud.firestore_v1 import AsyncClient, transactional, Transaction, async_transactional
-    from google.cloud.firestore_admin_v1.services.firestore_admin import FirestoreAdminClient
-    from google.cloud.firestore_admin_v1.services.firestore_admin import FirestoreAdminAsyncClient
+    from google.cloud.firestore_v1 import (
+        AsyncClient,
+        Transaction,
+        async_transactional,
+        transactional,
+    )
+
+    from firedantic import (  # # IndexField,
+        AsyncModel,
+        Model,
+        async_set_up_composite_indexes_and_ttl_policies,
+        collection_group_index,
+        collection_index,
+        get_all_subclasses,
+        get_async_transaction,
+        get_transaction,
+        set_up_composite_indexes_and_ttl_policies,
+    )
+    from firedantic.common import IndexField
+    from firedantic.configurations import CONFIGURATIONS, configuration, configure
 
 except Exception as e:
-    print("Failed to import required modules. Ensure `firedantic` is importable and google-cloud-* libs are installed.")
+    print(
+        "Failed to import required modules. Ensure `firedantic` is importable and google-cloud-* libs are installed."
+    )
     raise
 
 
 EMULATOR = os.environ.get("FIRESTORE_EMULATOR_HOST")
 USE_EMULATOR = bool(EMULATOR)
 
+
 def must(msg: str):
     print("ERROR:", msg)
     sys.exit(2)
 
+
 def info(msg: str):
     print(msg)
+
 
 # -----------------------
 # Helpers
@@ -72,6 +85,7 @@ def assert_or_exit(cond: bool, message: str):
         print("ASSERTION FAILED:", message)
         raise AssertionError(message)
 
+
 def cleanup_sync_collection_by_model(model_cls: type[Model]) -> None:
     """Delete everything from a model's collection (sync)."""
     info(f"Cleaning collection for sync model {model_cls.__name__}")
@@ -79,11 +93,13 @@ def cleanup_sync_collection_by_model(model_cls: type[Model]) -> None:
     for obj in model_cls.find({}):
         obj.delete()
 
+
 async def cleanup_async_collection_by_model(model_cls: type[AsyncModel]) -> None:
     info(f"Cleaning collection for async model {model_cls.__name__}")
     items = await model_cls.find({})
     for it in items:
         await it.delete()
+
 
 # admin helpers
 def get_admin_client_if_possible():
@@ -100,6 +116,7 @@ def get_admin_client_if_possible():
         info(f"FirestoreAdminClient unavailable/skipping admin steps: {e}")
         return None
 
+
 async def get_async_admin_client_if_possible():
     try:
         if USE_EMULATOR:
@@ -111,6 +128,7 @@ async def get_async_admin_client_if_possible():
     except Exception as e:
         info(f"FirestoreAdminAsyncClient unavailable/skipping admin steps: {e}")
         return None
+
 
 # -----------------------
 # Test cases
@@ -127,9 +145,9 @@ def test_new_config_sync_flow():
     configuration.add(name="billing", prefix="billing-", project="billing-project")
 
     # get clients
-    client = configuration.get_client()                  # sync client for "(default)"
+    client = configuration.get_client()  # sync client for "(default)"
     # async_client = configuration.get_async_client()      # async client for "(default)"
-    billing_client = configuration.get_client("billing") # sync client for "billing"
+    billing_client = configuration.get_client("billing")  # sync client for "billing"
 
     class Billing(Model):
         __db_config__ = "billing"
@@ -153,7 +171,10 @@ def test_new_config_sync_flow():
     # find
     results = Billing.find({"name": "Firedantic Billing"})
     assert_or_exit(isinstance(results, list), "find returned not a list")
-    assert_or_exit(any(r.billing_id == "9901981" for r in results), "find did not return saved billing account")
+    assert_or_exit(
+        any(r.billing_id == "9901981" for r in results),
+        "find did not return saved billing account",
+    )
 
     # delete
     b.delete()
@@ -175,7 +196,10 @@ def test_legacy_config_sync_flow():
         client = Client()
 
     configure(client, prefix="legacy-sync-")
-    assert_or_exit(CONFIGURATIONS["prefix"].startswith("legacy-sync-"), "legacy configure prefix mismatch")
+    assert_or_exit(
+        CONFIGURATIONS["prefix"].startswith("legacy-sync-"),
+        "legacy configure prefix mismatch",
+    )
 
     # use same model pattern as earlier
     class LegacyOwner(Model):
@@ -201,7 +225,9 @@ def test_legacy_config_sync_flow():
 async def test_new_config_async_flow():
     info("\n=== new Configuration API: async flow ===")
     mock_creds = Mock(spec=google.auth.credentials.Credentials)
-    configuration.add(prefix="integ-async-", project="test-project", credentials=mock_creds)
+    configuration.add(
+        prefix="integ-async-", project="test-project", credentials=mock_creds
+    )
 
     class Owner(AsyncModel):
         first_name: str
@@ -225,14 +251,15 @@ async def test_new_config_async_flow():
     assert_or_exit(c.owner.first_name == "Alice", "async owner first name mismatch")
 
     found = await Company.find({"company_id": "A-1"})
-    assert_or_exit(len(found) >= 1 and found[0].company_id == "A-1", "async find failed")
+    assert_or_exit(
+        len(found) >= 1 and found[0].company_id == "A-1", "async find failed"
+    )
 
     await c.delete()
     remains = await Company.find({"company_id": "A-1"})
     assert_or_exit(all(x.company_id != "A-1" for x in remains), "async delete failed")
 
     print("new config async flow OK")
-
 
 
 async def test_legacy_config_async_flow():
@@ -245,7 +272,10 @@ async def test_legacy_config_async_flow():
         aclient = AsyncClient()
     # legacy configure supports AsyncClient and sets CONFIGURATIONS
     configure(aclient, prefix="legacy-async-")
-    assert_or_exit(CONFIGURATIONS["prefix"].startswith("legacy-async-"), "legacy async configure failed")
+    assert_or_exit(
+        CONFIGURATIONS["prefix"].startswith("legacy-async-"),
+        "legacy async configure failed",
+    )
 
     class LOwner(AsyncModel):
         first_name: str
@@ -264,6 +294,7 @@ async def test_legacy_config_async_flow():
     assert_or_exit(c.company_id == "LA-1", "legacy async reload failed")
     await c.delete()
     info("legacy async flow OK")
+
 
 def test_subcollections_and_model_for():
     info("\n=== subcollections (model_for) ===")
@@ -299,7 +330,9 @@ def test_subcollections_and_model_for():
     s.save()
     # find back
     found = StatsCollection.find({"purchases": 3})
-    assert_or_exit(any(x.purchases == 3 for x in found), "subcollection save/find failed")
+    assert_or_exit(
+        any(x.purchases == 3 for x in found), "subcollection save/find failed"
+    )
     # cleanup
     for x in StatsCollection.find({}):
         x.delete()
@@ -307,16 +340,17 @@ def test_subcollections_and_model_for():
         x.delete()
     info("subcollections OK")
 
+
 def test_transactions_sync():
     info("\n=== sync transactions ===")
     # mock_creds = Mock(spec=google.auth.credentials.Credentials)
-    
+
     # Configure once
     configuration.add(
         project="firedantic-test",
         prefix="firedantic-test-",
     )
-    
+
     class City(Model):
         __collection__ = "cities"
         population: int = 0
@@ -335,9 +369,7 @@ def test_transactions_sync():
     cleanup_sync_collection_by_model(City)
 
     @transactional
-    def decrement_population(
-        transaction: Transaction, city: City, decrement: int = 1
-    ):
+    def decrement_population(transaction: Transaction, city: City, decrement: int = 1):
         city.reload(transaction=transaction)
         city.population = max(0, city.population - decrement)
         city.save(transaction=transaction)
@@ -356,14 +388,15 @@ def test_transactions_sync():
     # reload
     c.reload()
     assert_or_exit(c.population == 2, "sync transaction increment failed")
-    
+
     # delete
     c.delete()
     print("sync transactions OK")
 
+
 async def test_transactions_async():
     info("\n=== async transactions ===")
-    
+
     # Configure once
     configuration.add(
         project="async-tx-test",
@@ -398,16 +431,24 @@ async def test_transactions_async():
     await c.delete()
     print("async transactions OK")
 
+
 def test_multi_config_usage():
     info("\n=== multi-config usage ===")
 
     mock_creds = Mock(spec=google.auth.credentials.Credentials)
-    
+
     # default config
-    configuration.add(prefix="multi-default-", project="proj-default", credentials=mock_creds)
-    
+    configuration.add(
+        prefix="multi-default-", project="proj-default", credentials=mock_creds
+    )
+
     # billing config
-    configuration.add(name="billing", prefix="multi-billing-", project="proj-billing", credentials=mock_creds)
+    configuration.add(
+        name="billing",
+        prefix="multi-billing-",
+        project="proj-billing",
+        credentials=mock_creds,
+    )
 
     class CompanyDefault(Model):
         __collection__ = "companies"
@@ -438,13 +479,18 @@ def test_multi_config_usage():
     # find calls (default vs billing)
     found_default = CompanyDefault.find({"company_id": "MD-1"})
     found_billing = BillingAccount.find({"billing_id": "B-1"})
-    assert_or_exit(any(x.company_id == "MD-1" for x in found_default), "find default failed")
-    assert_or_exit(any(x.billing_id == "B-1" for x in found_billing), "find billing failed")
+    assert_or_exit(
+        any(x.company_id == "MD-1" for x in found_default), "find default failed"
+    )
+    assert_or_exit(
+        any(x.billing_id == "B-1" for x in found_billing), "find billing failed"
+    )
 
     # cleanup
     cleanup_sync_collection_by_model(CompanyDefault)
     cleanup_sync_collection_by_model(BillingAccount)
     info("multi-config usage OK")
+
 
 def test_indexes_and_ttl_sync():
     info("\n=== composite indexes and TTL (sync) ===")
@@ -458,22 +504,37 @@ def test_indexes_and_ttl_sync():
         __collection__ = "expiringModel"
         __ttl_field__ = "expire"
         __composite_indexes__ = [
-            collection_index(IndexField("content", Query.ASCENDING), IndexField("expire", Query.DESCENDING)),
-            collection_group_index(IndexField("content", Query.DESCENDING), IndexField("expire", Query.ASCENDING)),
+            collection_index(
+                IndexField("content", Query.ASCENDING),
+                IndexField("expire", Query.DESCENDING),
+            ),
+            collection_group_index(
+                IndexField("content", Query.DESCENDING),
+                IndexField("expire", Query.ASCENDING),
+            ),
         ]
         content: str
         expire: datetime
 
     # register config with admin client (best-effort)
     mock_creds = Mock(spec=google.auth.credentials.Credentials)
-    configuration.add(prefix="idx-sync-", project="proj-idx", credentials=mock_creds, client=None, async_client=None, admin_client=admin_client)
+    configuration.add(
+        prefix="idx-sync-",
+        project="proj-idx",
+        credentials=mock_creds,
+        client=None,
+        async_client=None,
+        admin_client=admin_client,
+    )
 
     try:
         # call setup function (may require admin permission; emulator may accept)
         project = configuration.get_config().project
         if not USE_EMULATOR:
             # real GCP -> try to set up indexes
-            set_up_composite_indexes_and_ttl_policies(gcloud_project=project, models=get_all_subclasses(Model))
+            set_up_composite_indexes_and_ttl_policies(
+                gcloud_project=project, models=get_all_subclasses(Model)
+            )
             info("sync index/ttl setup called (no exception)")
         else:
             # emulator -> skip (or log)
@@ -481,6 +542,7 @@ def test_indexes_and_ttl_sync():
 
     except Exception as e:
         info(f"index/ttl setup raised (will continue): {e}")
+
 
 async def test_indexes_and_ttl_async():
     info("\n=== composite indexes and TTL (async) ===")
@@ -493,7 +555,10 @@ async def test_indexes_and_ttl_async():
         __collection__ = "expiringModel"
         __ttl_field__ = "expire"
         __composite_indexes__ = [
-            collection_index(IndexField("content", Query.ASCENDING), IndexField("expire", Query.DESCENDING)),
+            collection_index(
+                IndexField("content", Query.ASCENDING),
+                IndexField("expire", Query.DESCENDING),
+            ),
         ]
         content: str
         expire: datetime
@@ -505,14 +570,17 @@ async def test_indexes_and_ttl_async():
         project = configuration.get_config().project
         if not USE_EMULATOR:
             # real GCP -> try to set up indexes
-            await async_set_up_composite_indexes_and_ttl_policies(gcloud_project=project, models=get_all_subclasses(AsyncModel))
+            await async_set_up_composite_indexes_and_ttl_policies(
+                gcloud_project=project, models=get_all_subclasses(AsyncModel)
+            )
             info("async index/ttl setup called (no exception)")
         else:
             # emulator -> skip (or log)
             print("Skipping index/TTL setup when using emulator.")
-        
+
     except Exception as e:
         info(f"async index/ttl setup raised (will continue): {e}")
+
 
 # -----------------------
 # Runner
@@ -520,7 +588,9 @@ async def test_indexes_and_ttl_async():
 def main():
     info("Beginning full integration test following README examples")
     if not USE_EMULATOR:
-        info("WARNING: FIRESTORE_EMULATOR_HOST not set — this script is designed for emulator runs; continue with caution.")
+        info(
+            "WARNING: FIRESTORE_EMULATOR_HOST not set — this script is designed for emulator runs; continue with caution."
+        )
 
     # run sync new config flow
     test_new_config_sync_flow()
@@ -529,7 +599,7 @@ def main():
     test_legacy_config_sync_flow()
 
     # run async new config flow
-    asyncio.run(test_new_config_async_flow()) ## Currently deletion fails!
+    asyncio.run(test_new_config_async_flow())  ## Currently deletion fails!
 
     # legacy async flow
     asyncio.run(test_legacy_config_async_flow())
@@ -549,6 +619,7 @@ def main():
     asyncio.run(test_indexes_and_ttl_async())
 
     info("\nIntegration README full test finished successfully.")
+
 
 if __name__ == "__main__":
     main()

@@ -1,24 +1,29 @@
+import warnings
 from os import environ
 from typing import Any, Dict, Optional, Type, Union
-import warnings
 
-from google.auth.credentials import Credentials
 from google.api_core.client_options import ClientOptions
 from google.api_core.gapic_v1.client_info import ClientInfo
-from google.cloud.firestore_v1 import (
-    AsyncClient, 
-    AsyncTransaction, 
-    Client, 
-    CollectionReference,
-    Transaction
-)
+from google.auth.credentials import Credentials
 from google.cloud.firestore_admin_v1 import FirestoreAdminClient
-from google.cloud.firestore_admin_v1.services.firestore_admin import FirestoreAdminAsyncClient
-from google.cloud.firestore_admin_v1.services.firestore_admin.transports.base import DEFAULT_CLIENT_INFO
+from google.cloud.firestore_admin_v1.services.firestore_admin import (
+    FirestoreAdminAsyncClient,
+)
+from google.cloud.firestore_admin_v1.services.firestore_admin.transports.base import (
+    DEFAULT_CLIENT_INFO,
+)
+from google.cloud.firestore_v1 import (
+    AsyncClient,
+    AsyncTransaction,
+    Client,
+    CollectionReference,
+    Transaction,
+)
 from pydantic import BaseModel
 
 # --- Old compatibility surface (kept for backwards compatibility) ---
 CONFIGURATIONS: Dict[str, Any] = {}
+
 
 def configure(client: Union[Client, AsyncClient], prefix: str = "") -> None:
     """
@@ -42,7 +47,7 @@ def configure(client: Union[Client, AsyncClient], prefix: str = "") -> None:
     else:
         # treat as sync client
         configuration.add(name="(default)", prefix=prefix, client=client)
-    
+
     CONFIGURATIONS["db"] = client
     CONFIGURATIONS["prefix"] = prefix
 
@@ -63,6 +68,7 @@ class ConfigItem(BaseModel):
     Holds configuration for a named Firestore connection.
     Clients may be provided directly, or created lazily from the stored params.
     """
+
     name: str
     prefix: str = ""
     project: Optional[str] = None
@@ -82,6 +88,7 @@ class ConfigItem(BaseModel):
 
     model_config = {"arbitrary_types_allowed": True}
 
+
 class Configuration:
     """
     Registry for named Firestore configurations.
@@ -98,7 +105,7 @@ class Configuration:
 
         # Create a sensible default config entry, but avoid passing empty string as project.
         default_project = environ.get("GOOGLE_CLOUD_PROJECT") or None
-        
+
         self.config["(default)"] = ConfigItem(
             name="(default)",
             prefix="",
@@ -128,7 +135,7 @@ class Configuration:
         You may either pass a pre-built client and/or an async_client,
         or provide only project/credentials so clients will be constructed lazily.
         """
-        
+
         normalized_project = self._normalize_project(project)
 
         item = ConfigItem(
@@ -147,14 +154,14 @@ class Configuration:
         )
         self.config[name] = item
         return item
-    
+
     # dict-like accessors
     def __getitem__(self, name: str) -> ConfigItem:
         return self.get_config(name)
 
     def __contains__(self, name: str) -> bool:
         return name in self.config
-    
+
     def get(self, name: str, default=None):
         return self.config.get(name, default)
 
@@ -165,10 +172,10 @@ class Configuration:
             raise KeyError(
                 f"Configuration '{name}' not found. Available: {list(self.config.keys())}"
             ) from err
-        
+
     def get_config_names(self):
         return list(self.config.keys())
-        
+
     def _normalize_project(self, project: Optional[str]) -> Optional[str]:
         """
         Convert empty-string project to None so Client(...) doesn't get empty string for project (i.e. project="")
@@ -186,7 +193,7 @@ class Configuration:
             if cfg.project is None:
                 raise RuntimeError(
                     f"No sync client configured for '{resolved}' and no project available; "
-                    "call configuration.add(..., client=..., project=...) or set " \
+                    "call configuration.add(..., client=..., project=...) or set "
                     "GOOGLE_CLOUD_PROJECT and let add() build the client."
                 )
             cfg.client = Client(
@@ -197,7 +204,7 @@ class Configuration:
                 # NOTE: modern firestore clients may accept database param in constructor; keep for future.
             )
         return cfg.client
-    
+
     # async client accessor (lazy-create)
     def get_async_client(self, name: Optional[str] = None) -> AsyncClient:
         resolved = name if name is not None else "(default)"
@@ -207,7 +214,7 @@ class Configuration:
             if cfg.project is None:
                 raise RuntimeError(
                     f"No async client configured for '{resolved}' and no project available; "
-                    "call configuration.add(..., async_client=..., project=...) or set " \
+                    "call configuration.add(..., async_client=..., project=...) or set "
                     "GOOGLE_CLOUD_PROJECT and let add() build the client."
                 )
             cfg.async_client = AsyncClient(
@@ -217,12 +224,12 @@ class Configuration:
                 client_options=cfg.client_options,  # type: ignore[arg-type]
             )
         return cfg.async_client
-    
+
     # admin client accessor (lazy-create)
     def get_admin_client(self, name: Optional[str] = None) -> FirestoreAdminClient:
         resolved = name if name is not None else "(default)"
         cfg = self.get_config(resolved)
-       
+
         if cfg.admin_client is None:
             cfg.admin_client = FirestoreAdminClient(
                 credentials=cfg.credentials,
@@ -233,10 +240,12 @@ class Configuration:
         return cfg.admin_client
 
     # async admin client accessor (lazy-create)
-    def get_async_admin_client(self, name: Optional[str] = None) -> FirestoreAdminAsyncClient:
+    def get_async_admin_client(
+        self, name: Optional[str] = None
+    ) -> FirestoreAdminAsyncClient:
         resolved = name if name is not None else "(default)"
         cfg = self.get_config(resolved)
-        
+
         if cfg.async_admin_client is None:
             cfg.async_admin_client = FirestoreAdminAsyncClient(
                 credentials=cfg.credentials,
@@ -252,9 +261,11 @@ class Configuration:
 
     def get_async_transaction(self, name: Optional[str] = None) -> AsyncTransaction:
         return self.get_async_client(name=name).transaction()
-    
+
     # helpers for models to derive collection name / reference
-    def get_collection_name(self, model_class: Type, config_name: Optional[str] = None) -> str:
+    def get_collection_name(
+        self, model_class: Type, config_name: Optional[str] = None
+    ) -> str:
         """
         Return the collection name string (prefix + model name).
         """
@@ -268,7 +279,9 @@ class Configuration:
             model_name = model_class.__name__
             return f"{prefix}{model_name[0].lower()}{model_name[1:]}"  # (lower case first letter of model name)
 
-    def get_collection_ref(self, model_class: Type, name: Optional[str] = None) -> CollectionReference:
+    def get_collection_ref(
+        self, model_class: Type, name: Optional[str] = None
+    ) -> CollectionReference:
         """
         Return a CollectionReference for the given model_class using the sync client.
         """
@@ -289,11 +302,12 @@ class Configuration:
         async_client = cfg.async_client
         if async_client is None:
             raise RuntimeError(f"No async client configured for config '{resolved}'")
-        
+
         collection_name = self.get_collection_name(model_class, resolved)
 
         return async_client.collection(collection_name)
-    
+
+
 # make the module-level singleton available to models/tests
 # other modules should: from firedantic.configurations import configuration
 configuration = Configuration()

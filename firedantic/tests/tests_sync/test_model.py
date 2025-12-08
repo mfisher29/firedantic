@@ -98,6 +98,12 @@ def test_find(create_company, create_product) -> None:
     d = Company.find({"owner.first_name": "John"})
     assert len(d) == 4
 
+    d = Company.find({"owner.first_name": {op.EQ: "John"}})
+    assert len(d) == 4
+
+    d = Company.find({"owner.first_name": {"==": "John"}})
+    assert len(d) == 4
+
     for p in TEST_PRODUCTS:
         create_product(**p)
 
@@ -251,6 +257,7 @@ def test_get_by_empty_str_id() -> None:
 def test_missing_collection() -> None:
     class User(Model):
         name: str
+        # normally __collection__ would be defined here
 
     with pytest.raises(CollectionNotDefined):
         User(name="John").save()
@@ -300,7 +307,7 @@ def test_model_aliases() -> None:
         "!:&+-*'()",
     ],
 )
-def test_models_with_valid_custom_id( model_id) -> None:
+def test_models_with_valid_custom_id(model_id) -> None:
     product_id = str(uuid4())
 
     product = Product(product_id=product_id, price=123.45, stock=2)
@@ -395,7 +402,7 @@ def test_bare_model_document_id_persistency() -> None:
     assert len(CustomIDModel.find({})) == 1
 
 
-def test_bare_model_get_by_empty_doc_id(configure_db) -> None:
+def test_bare_model_get_by_empty_doc_id() -> None:
     with pytest.raises(ModelNotFoundError):
         CustomIDModel.get_by_doc_id("")
 
@@ -508,8 +515,6 @@ def test_save_with_exclude_unset() -> None:
 def test_update_city_in_transaction() -> None:
     """
     Test updating a model in a transaction. Test case from README.
-
-    :param: configure_db: pytest fixture
     """
 
     @transactional
@@ -531,8 +536,6 @@ def test_update_city_in_transaction() -> None:
 def test_delete_in_transaction() -> None:
     """
     Test deleting a model in a transaction.
-
-    :param: configure_db: pytest fixture
     """
 
     @transactional
@@ -546,7 +549,8 @@ def test_delete_in_transaction() -> None:
     assert p.id
 
     t = get_transaction()
-    delete_in_transaction(t, p.id)
+    with t:
+        delete_in_transaction(t, p.id)
 
     with pytest.raises(ModelNotFoundError):
         Profile.get_by_id(p.id)
@@ -555,8 +559,6 @@ def test_delete_in_transaction() -> None:
 def test_update_model_in_transaction() -> None:
     """
     Test updating a model in a transaction.
-
-    :param: configure_db: pytest fixture
     """
 
     @transactional
@@ -581,8 +583,6 @@ def test_update_model_in_transaction() -> None:
 def test_update_submodel_in_transaction() -> None:
     """
     Test Updating a submodel in a transaction.
-
-    :param: configure_db: pytest fixture
     """
 
     @transactional
