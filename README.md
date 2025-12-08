@@ -678,7 +678,7 @@ if __name__ == "__main__":
 
 PRs are welcome!
 
-### Prequisites:
+### Prerequisites:
 
 - [pipx](https://pipx.pypa.io/stable/installation/) (to install poetry, if needed)
 - `pipx install poetry`
@@ -711,39 +711,9 @@ start_emulator
 
 To run tests locally, you should first:
 
-Set the host:
-
-```bash
-export FIRESTORE_EMULATOR_HOST=<host port>
-```
-
-Setup a virtual environment(not required but will be easier to run poetry like so):
-
-```bash
-python -m venv firedantic
-source firedantic/bin/activate
-cd firedantic/tests
-```
-
-Run pytests within `tests` directory:
-```bash
-pip install pytest
-pip install pytest-asyncio
-pytest .
-```
-
-Poetry is configured to run on the published version of firedantic and will overwrite changes.
-Not recommended for local development. For public use, poetry is recommended:
-Run poetry within `tests` directory:
-
 ```bash
 poetry install
 poetry run invoke test
-```
-
-To run a singular test:
-```bash
-poetry run pytest tests_sync/<test_file_name>.py::<test_name>
 ```
 
 \*Note, the emulator must be set and running for all tests to pass.
