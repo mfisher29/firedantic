@@ -51,7 +51,7 @@ def test_old_way():
     )
 
     # Delete everything from the database
-    company.delete_all_for_model()
+    company.delete()
 
 
 ## With single sync client
@@ -111,7 +111,7 @@ def test_with_default():
     )
 
     # Delete everything from the database
-    company.delete_all_for_model()
+    company.delete()
 
 
 # Now with multiple SYNC clients/dbs:
@@ -231,8 +231,8 @@ def test_with_multiple():
     )
 
     # now delete everything from the DBs:
-    company.delete_all_for_model()
-    bc.delete_all_for_model()
+    company.delete()
+    bc.delete()
 
 
 ## Ensure existing configure function works for backwards compatibility

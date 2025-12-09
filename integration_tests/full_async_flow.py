@@ -51,7 +51,7 @@ async def test_old_way():
     )
 
     # Delete everything from the database
-    await company.delete_all_for_model()
+    await company.delete()
     deletion_success = [] == await Company.find({"company_id": "1234567-7"})
     if not deletion_success:
         print(f"\nDeletion of (default) DB failed\n")
@@ -115,7 +115,7 @@ async def test_with_default():
     )
 
     # Delete everything from the database
-    await company.delete_all_for_model()
+    await company.delete()
     deletion_success = [] == await Company.find({"company_id": "1234567-8a"})
     if not deletion_success:
         print(f"\nDeletion of (default) DB failed\n")
@@ -241,8 +241,8 @@ async def test_with_multiple():
     )
 
     # Delete everything from the database
-    await company.delete_all_for_model()
-    await bc.delete_all_for_model()
+    await company.delete()
+    await bc.delete()
 
     deletion_success = [] == await Company.find({"company_id": "1234567-8a"})
     if not deletion_success:
