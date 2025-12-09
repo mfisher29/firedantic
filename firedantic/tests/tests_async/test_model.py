@@ -8,6 +8,7 @@ from pydantic import Field, ValidationError
 
 import firedantic.operators as op
 from firedantic import AsyncModel, get_async_transaction
+from firedantic.configurations import configuration
 from firedantic.exceptions import (
     CollectionNotDefined,
     InvalidDocumentID,
@@ -43,21 +44,6 @@ async def test_save_model(create_company) -> None:
     assert company.id is not None
     assert company.owner.first_name == "John"
     assert company.owner.last_name == "Doe"
-
-
-@pytest.mark.asyncio
-async def test_delete_all_for_model(create_company) -> None:
-    company: Company = await create_company(
-        company_id="11223344-5", first_name="Jane", last_name="Doe"
-    )
-
-    _id = company.id
-    assert _id
-
-    await company.delete_all_for_model()
-
-    with pytest.raises(ModelNotFoundError):
-        await Company.get_by_id(_id)
 
 
 @pytest.mark.asyncio
@@ -572,29 +558,43 @@ async def test_update_city_in_transaction() -> None:
 
 
 @pytest.mark.asyncio
-async def test_delete_in_transaction() -> None:
+async def test_delete_in_transaction(create_company):
     """
-    Test deleting a model in a transaction.
+    Test deleting a Company model within a Firestore transaction.
     """
+    # Create a company
+    company: Company = await create_company(
+        company_id="11223344-4", first_name="Joe", last_name="Day"
+    )
+    _id = company.id
+    assert _id
 
     @async_transactional
-    async def delete_in_transaction(
-        transaction: AsyncTransaction, profile_id: str
-    ) -> None:
-        """Deletes a Profile in a transaction."""
-        profile = await Profile.get_by_id(profile_id, transaction=transaction)
-        await profile.delete(transaction=transaction)
+    async def delete_company(transaction: AsyncTransaction) -> None:
+        await company.delete()
 
-    p = Profile(name="Foo")
-    await p.save()
-    assert p.id
-
+    # Call the transactional function
     t = get_async_transaction()
-    async with t:
-        await delete_in_transaction(t, p.id)
+    await delete_company(t)
+
+    # Outside the transaction, the deletion should now be committed
+    with pytest.raises(ModelNotFoundError):
+        await Company.get_by_id(_id)
+
+
+@pytest.mark.asyncio
+async def test_delete_model(create_company) -> None:
+    company: Company = await create_company(
+        company_id="11223344-5", first_name="Jane", last_name="Doe"
+    )
+
+    _id = company.id
+    assert _id
+
+    await company.delete()
 
     with pytest.raises(ModelNotFoundError):
-        await Profile.get_by_id(p.id)
+        await Company.get_by_id(_id)
 
 
 @pytest.mark.asyncio

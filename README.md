@@ -737,9 +737,10 @@ poetry install
 poetry run invoke test
 ```
 
-
-\*Note, when new functions, comments, variables etc. are added that will span across sync and async directories, be sure to first declare the replacements in `unasync.py` before running `poetry run invoke test`. I.e. indicating a replacement of 'async_client' with 'client' text across both directories.
-
+\*Note, when new functions, comments, variables etc. are added that will span across
+sync and async directories, be sure to first declare the replacements in `unasync.py`
+before running `poetry run invoke test`. I.e. indicating a replacement of 'async_client'
+with 'client' text across both directories.
 
 \*Note, the emulator must be set and running for all tests to pass.
 

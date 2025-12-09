@@ -8,6 +8,7 @@ from pydantic import Field, ValidationError
 
 import firedantic.operators as op
 from firedantic import Model, get_transaction
+from firedantic.configurations import configuration
 from firedantic.exceptions import (
     CollectionNotDefined,
     InvalidDocumentID,
@@ -42,20 +43,6 @@ def test_save_model(create_company) -> None:
     assert company.id is not None
     assert company.owner.first_name == "John"
     assert company.owner.last_name == "Doe"
-
-
-def test_delete_all_for_model(create_company) -> None:
-    company: Company = create_company(
-        company_id="11223344-5", first_name="Jane", last_name="Doe"
-    )
-
-    _id = company.id
-    assert _id
-
-    company.delete_all_for_model()
-
-    with pytest.raises(ModelNotFoundError):
-        Company.get_by_id(_id)
 
 
 def test_find_one(create_company) -> None:
@@ -533,27 +520,42 @@ def test_update_city_in_transaction() -> None:
     assert c.population == 0
 
 
-def test_delete_in_transaction() -> None:
+def test_delete_in_transaction(create_company):
     """
-    Test deleting a model in a transaction.
+    Test deleting a Company model within a Firestore transaction.
     """
+    # Create a company
+    company: Company = create_company(
+        company_id="11223344-4", first_name="Joe", last_name="Day"
+    )
+    _id = company.id
+    assert _id
 
     @transactional
-    def delete_in_transaction(transaction: Transaction, profile_id: str) -> None:
-        """Deletes a Profile in a transaction."""
-        profile = Profile.get_by_id(profile_id, transaction=transaction)
-        profile.delete(transaction=transaction)
+    def delete_company(transaction: Transaction) -> None:
+        company.delete()
 
-    p = Profile(name="Foo")
-    p.save()
-    assert p.id
-
+    # Call the transactional function
     t = get_transaction()
-    with t:
-        delete_in_transaction(t, p.id)
+    delete_company(t)
+
+    # Outside the transaction, the deletion should now be committed
+    with pytest.raises(ModelNotFoundError):
+        Company.get_by_id(_id)
+
+
+def test_delete_model(create_company) -> None:
+    company: Company = create_company(
+        company_id="11223344-5", first_name="Jane", last_name="Doe"
+    )
+
+    _id = company.id
+    assert _id
+
+    company.delete()
 
     with pytest.raises(ModelNotFoundError):
-        Profile.get_by_id(p.id)
+        Company.get_by_id(_id)
 
 
 def test_update_model_in_transaction() -> None:

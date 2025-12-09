@@ -172,11 +172,74 @@ class AsyncBareModel(pydantic.BaseModel, ABC):
         """
         doc_ref = self._get_doc_ref()
 
+        # try to extract client-like objects
+        doc_client = getattr(doc_ref, "_client", None) or getattr(
+            doc_ref, "client", None
+        )
+        tx_client = (
+            getattr(transaction, "_client", None)
+            or getattr(transaction, "_client_async", None)
+            if transaction is not None
+            else None
+        )
+
         if transaction is not None:
+            # Defensive check: make sure the doc_ref is built from same client as the transaction.
+            tx_client = getattr(transaction, "_client", None) or getattr(
+                transaction, "_client_async", None
+            )
+            doc_client = getattr(doc_ref, "_client", None) or getattr(
+                doc_ref, "client", None
+            )
+
+            # If both sides expose client objects, ensure they are same identity.
+            if (
+                tx_client is not None
+                and doc_client is not None
+                and tx_client is not doc_client
+            ):
+                # Try to rebuild a document reference from the transaction's client using the same path
+                path = getattr(doc_ref, "path", None)
+                if path is None:
+                    raise RuntimeError(
+                        "Cannot resolve document path to rebuild doc_ref for transaction."
+                    )
+
+                # For most firestores clients, client.document(path) works for sync client;
+                # for async, we try client.document(path) as well (it usually exists).
+                try:
+                    # prefer a method that accepts full path
+                    alt_doc_ref = None
+                    if hasattr(tx_client, "document"):
+                        alt_doc_ref = tx_client.document(path)
+                    elif hasattr(tx_client, "collection"):
+                        # fallback: split path to collection and doc id
+                        parts = path.split("/")
+                        if len(parts) >= 2:
+                            collection_path = "/".join(parts[:-1])
+                            doc_id = parts[-1]
+                            alt_doc_ref = tx_client.collection(
+                                collection_path
+                            ).document(doc_id)
+                    if alt_doc_ref is None:
+                        raise RuntimeError(
+                            "Could not rebuild document reference from transaction client."
+                        )
+                    doc_ref = alt_doc_ref
+
+                except Exception as exc:
+                    raise RuntimeError(
+                        "Document reference was created from a different Firestore client than "
+                        "the provided transaction. Recreate doc_ref from the transaction's client "
+                        "or call delete() without a transaction."
+                    ) from exc
+
+            # schedule delete on the transaction (this will be committed on transaction commit)
             transaction.delete(doc_ref)
-        else:
-            # print(f"\nTransaction not provided, deleting document: {self._get_doc_ref().path}")
-            await doc_ref.delete()
+            return
+
+        # no transaction: do a direct delete
+        await doc_ref.delete()
 
     async def reload(self, transaction: Optional[AsyncTransaction] = None) -> None:
         """
@@ -209,7 +272,7 @@ class AsyncBareModel(pydantic.BaseModel, ABC):
     _OrderBy = List[Tuple[str, OrderDirection]]
 
     @classmethod
-    async def delete_all_for_model(cls, config_name: Optional[str] = None) -> None:
+    async def delete(cls, config_name: Optional[str] = None) -> None:
 
         # Resolve config to use (explicit -> instance -> class -> default)
         config_name = cls.__db_config__
