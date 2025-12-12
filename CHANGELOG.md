@@ -7,6 +7,12 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+## [0.13.0] - 2025-12-12
+
+### Added
+
+- Added support for multiple firestore clients.
+
 ## [0.12.0] - 2025-11-20
 
 ### Changed
