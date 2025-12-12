@@ -25,7 +25,7 @@ from pydantic import BaseModel
 CONFIGURATIONS: Dict[str, Any] = {}
 
 
-def configure(client: Union[Client, AsyncClient], prefix: str = "") -> None:
+def configure(db: Union[Client, AsyncClient], prefix: str = "") -> None:
     """
     Legacy helper: updates the module-level `configuration` default entry and preserves
     the old CONFIGURATIONS mapping so old callers continue to work.
@@ -36,19 +36,19 @@ def configure(client: Union[Client, AsyncClient], prefix: str = "") -> None:
 
     # soft deprecation notice for users (no stacktrace)
     warnings.warn(
-        "firedantic.configure(client, ...) is deprecated and will be removed in a "
+        "firedantic.configure(db, ...) is deprecated and will be removed in a "
         "future release. Use firedantic.configurations.configuration.add(...) instead.",
         DeprecationWarning,
         stacklevel=2,
     )
 
-    if isinstance(client, AsyncClient):
-        configuration.add(name="(default)", prefix=prefix, async_client=client)
+    if isinstance(db, AsyncClient):
+        configuration.add(name="(default)", prefix=prefix, async_client=db)
     else:
         # treat as sync client
-        configuration.add(name="(default)", prefix=prefix, client=client)
+        configuration.add(name="(default)", prefix=prefix, client=db)
 
-    CONFIGURATIONS["db"] = client
+    CONFIGURATIONS["db"] = db
     CONFIGURATIONS["prefix"] = prefix
 
 
