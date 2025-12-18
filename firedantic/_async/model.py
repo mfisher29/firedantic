@@ -466,8 +466,6 @@ class AsyncBareModel(pydantic.BaseModel, ABC):
 
         :raise DocumentIDError: If the ID is not valid.
         """
-        # _get_col_ref takes collection_name, not config_name.
-        # Any specific config usage should likely be handled by context or passed properly if supported.
         return self._get_col_ref().document(self.get_document_id())  # type: ignore
 
     @staticmethod

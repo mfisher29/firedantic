@@ -71,7 +71,7 @@ def test_get_async_client_lazy_creation_and_caching(monkeypatch):
 
 def test_preserve_prebuilt_clients():
     """
-    If user supplies a prebuilt client / async_client to add(), the registry uses exactly them.
+    If user supplies a prebuilt client / async_client to add(), ensure it uses those.
     """
     cfg = Configuration()
 
@@ -379,7 +379,7 @@ def test_admin_client_creation_receives_transport_and_client_options(monkeypatch
     admin = cfg.get_admin_client("z")
     assert isinstance(admin, FakeAdminClient)
     assert "kwargs" in captured
-    # check the captured kwargs include our transport + client_options and a client_info (or default)
+    # check the captured kwargs including transport + client_options and a client_info (or default)
     assert captured["kwargs"].get("transport") is fake_transport
     assert captured["kwargs"].get("client_options") == fake_client_options
     assert "client_info" in captured["kwargs"]
