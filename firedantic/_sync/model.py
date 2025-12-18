@@ -164,7 +164,7 @@ class BareModel(pydantic.BaseModel, ABC):
 
     def delete(self, transaction: Optional[Transaction] = None) -> None:
         """
-        Deletes this model from the database.
+        Deletes this specific model instance from the database.
 
         :raise DocumentIDError: If the ID is not valid.
         """
@@ -270,7 +270,10 @@ class BareModel(pydantic.BaseModel, ABC):
     _OrderBy = List[Tuple[str, OrderDirection]]
 
     @classmethod
-    def delete(cls, config_name: Optional[str] = None) -> None:
+    def delete_all(cls, config_name: Optional[str] = None) -> None:
+        """
+        Deletes all models of this type from the database.
+        """
 
         # Resolve config to use (explicit -> instance -> class -> default)
         config_name = cls.__db_config__
@@ -457,7 +460,9 @@ class BareModel(pydantic.BaseModel, ABC):
 
         :raise DocumentIDError: If the ID is not valid.
         """
-        return self._get_col_ref(config_name).document(self.get_document_id())  # type: ignore
+        # _get_col_ref takes collection_name, not config_name.
+        # Any specific config usage should likely be handled by context or passed properly if supported.
+        return self._get_col_ref().document(self.get_document_id())  # type: ignore
 
     @staticmethod
     def _validate_document_id(document_id: str):
