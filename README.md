@@ -728,22 +728,6 @@ Run the Firestore emulator with a predictable port:
 start_emulator
 ```
 
-### Running Tests
-
-To run tests locally, you should first:
-
-```bash
-poetry install
-poetry run invoke test
-```
-
-\*Note, when new functions, comments, variables etc. are added that will span across
-sync and async directories, be sure to first declare the replacements in `unasync.py`
-before running `poetry run invoke test`. I.e. indicating a replacement of 'async_client'
-with 'client' text across both directories.
-
-\*Note, the emulator must be set and running for all tests to pass.
-
 ### About sync and async versions of library
 
 Although this library provides both sync and async versions of models, please keep in
@@ -774,6 +758,82 @@ information about the release in [CHANGELOG.md](CHANGELOG.md):
 
 ```bash
 poetry run invoke make-changelog
+```
+
+
+### Running Tests
+
+To run tests locally, you should first:
+
+```bash
+poetry install
+poetry run invoke test
+```
+
+\*Note, when new functions, comments, variables etc. are added that will span across
+sync and async directories, be sure to first declare the replacements in `unasync.py`
+before running `poetry run invoke test`. I.e. indicating a replacement of 'async_client'
+with 'client' text across both directories.
+
+\*Note, the emulator must be set and running for all tests to pass.
+
+### Running Integration Tests
+
+
+#### Environment and configuration
+
+- Ensure firestore emulator is running in another terminal window:
+  - `./start_emulator.sh`
+
+#### Files and purpose (replace placeholders with real filenames)
+
+- `integration_tests/configure_firestore_db_clients.py` — Purpose: shows how to create
+  and connect to various db clients.
+- `integration_tests/full_sync_flow.py` — Purpose: configures clients, saves data to db,
+  finds the data, and deletes all data in a sync fashion.
+- `integration_tests/full_async_flow.py` — Purpose: configures async clients, saves data
+  to db, finds the data, and deletes all data in an async fashion.
+- `integration_tests/full_readme_examples.py` - Purpose: intended to run all examples
+  shown in the readme, new and legacy.
+
+#### How to run
+
+Run each individual test file: 
+
+- `poetry run python integration_tests/configure_firestore_db_clients.py` 
+- `poetry run python integration_tests/full_sync_flow.py` 
+- `poetry run python integration_tests/full_async_flow.py` 
+- `poetry run python integration_tests/full_readme_examples.py`
+
+or run all:
+
+```bash
+poetry run invoke integration
+```
+
+#### What to expect
+
+- For the configure_firestore_db_clients test, you should expect to see the following:
+  `All configure_firestore_db_client tests passed!`
+
+- For the `full_sync_flow` and `full_async_flow`, you should expect to see the following
+  output: \
+  You can readily play around with the models to update the data as desired.
+
+```
+Number of company owners with first name: 'Bill': 1
+
+Number of companies with id: '1234567-7': 1
+
+Number of company owners with first name: 'John': 1
+
+Number of companies with id: '1234567-8a': 1
+
+Number of company owners with first name: 'Alice': 1
+
+Number of billing companies with id: '1234567-8c': 1
+
+Number of billing accounts with billing_id: 801048: 1
 ```
 
 ## License

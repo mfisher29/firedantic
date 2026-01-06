@@ -1,6 +1,9 @@
 from os import environ
 from unittest.mock import Mock
 
+if not environ.get("FIRESTORE_EMULATOR_HOST"):
+    environ["FIRESTORE_EMULATOR_HOST"] = "127.0.0.1:8686"
+
 import google.auth.credentials
 from google.cloud.firestore import AsyncClient, Client
 

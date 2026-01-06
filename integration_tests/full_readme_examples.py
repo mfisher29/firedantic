@@ -26,6 +26,9 @@ from unittest.mock import Mock
 
 import google.auth.credentials
 
+if not os.environ.get("FIRESTORE_EMULATOR_HOST"):
+    os.environ["FIRESTORE_EMULATOR_HOST"] = "127.0.0.1:8686"
+
 # require firedantic package (adjust path or install locally)
 try:
     # recommended imports
