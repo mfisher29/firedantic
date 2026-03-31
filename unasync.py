@@ -5,6 +5,8 @@ import re
 from pathlib import Path
 
 SUBS = [
+    ("get_async_client", "get_client"),
+    ("async_client", "client"),
     ("get_async_transaction", "get_transaction"),
     (
         "from google.cloud.firestore_v1.async_transaction",
@@ -25,6 +27,7 @@ SUBS = [
     ("async def", "def"),
     ("async for", "for"),
     ("async with", "with"),
+    ("async client", "client"),
     ("StopAsyncIteration", "StopIteration"),
     ("__anext__", "__next__"),
     ("async_truncate_collection", "truncate_collection"),

@@ -7,6 +7,22 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+## [0.13.0] - 2025-12-12
+
+### Added
+
+- Added support for multiple firestore clients.
+
+## [0.12.0] - 2025-11-20
+
+### Changed
+
+- Update underlying libraries to resolve possible security issues.
+
+### Removed
+
+- Removed support of Python 3.9.
+
 ## [0.11.0] - 2025-06-06
 
 ### Added
@@ -290,7 +306,8 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - Update README.md
 - Update .gitignore
 
-[unreleased]: https://github.com/ioxiocom/firedantic/compare/0.11.0...HEAD
+[unreleased]: https://github.com/ioxiocom/firedantic/compare/0.12.0...HEAD
+[0.12.0]: https://github.com/ioxiocom/firedantic/compare/0.11.0...0.12.0
 [0.11.0]: https://github.com/ioxiocom/firedantic/compare/0.10.0...0.11.0
 [0.10.0]: https://github.com/ioxiocom/firedantic/compare/0.9.0...0.10.0
 [0.9.0]: https://github.com/ioxiocom/firedantic/compare/0.8.1...0.9.0

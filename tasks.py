@@ -158,3 +158,18 @@ def make_changelog(ctx):
 
     changelog_path.write_text(new_changelog)
     print(f"{changelog_path} was updated, please fill in release information")
+
+
+@task
+def integration(ctx):
+    """
+    Run all integration tests
+    """
+    files = [
+        "integration_tests/configure_firestore_db_clients.py",
+        "integration_tests/full_sync_flow.py",
+        "integration_tests/full_async_flow.py",
+        "integration_tests/full_readme_examples.py",
+    ]
+    for f in files:
+        run_test_cmd(ctx, f"python {f}", env=DEV_ENV)
